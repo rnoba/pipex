@@ -35,22 +35,25 @@ void	ft_free_matrix(char **m)
 
 char	*ft_check_cmd(char *cmd, const char *path)
 {
-	char	**path_ = ft_split(path, ':');
+	char	**path_;
+	char	**old_ptr;
 	char	*full_cmd;
 
+	path_ = ft_split(path, ':');
 	ft_assert(path_ != NULL, "Error(split): (:()");
+	old_ptr = path_;
 	while (*path_)
 	{
 		full_cmd = ft_strjoin(*path_++, cmd);
 		if (access(full_cmd, F_OK | X_OK) == 0)
 		{
 			free(cmd);
-			ft_free_matrix(path_);
+			ft_free_matrix(old_ptr);
 			return (full_cmd);
 		}
 		free(full_cmd);
 	}
 	free(cmd);
-	ft_free_matrix(path_);
+	ft_free_matrix(old_ptr);
 	return (NULL);
 }

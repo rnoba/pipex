@@ -6,6 +6,7 @@
 #include <libft.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/wait.h>
 
 void		ft_assert(int x, const char *error_msg);
 void		ft_free_matrix(char **m);

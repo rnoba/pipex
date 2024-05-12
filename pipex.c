@@ -1,6 +1,5 @@
 #include <pipex.h>
 
-
 size_t	ft_strlendel(char *str, char del)
 {
 	size_t	size;
@@ -10,7 +9,8 @@ size_t	ft_strlendel(char *str, char del)
 	{
 		size++;
 	}
-	return (size); }
+	return (size);
+}
 
 size_t	ft_count_cmd(char *c)
 {
@@ -49,7 +49,6 @@ char	**ft_parse_cmd(char *cmd, const char *path)
 	out	= malloc(sizeof(char *) * (ft_count_cmd(cmd) + 1));
 	while (c)
 	{
-
 		if (ft_isspace(*c))
 			c++;
 		len = ft_strlendel(c, ' ');
@@ -70,7 +69,7 @@ char	**ft_parse_cmd(char *cmd, const char *path)
 				exit (0);
 			}
 			free(out[idx]);
-			out[idx] = full_cmd; 
+			out[idx] = full_cmd;
 		}
 		idx++;
 		if (c[0] == '\'' && ft_strchr(c + 1, '\''))
@@ -78,46 +77,57 @@ char	**ft_parse_cmd(char *cmd, const char *path)
 		else
 			c = ft_strchr(c + 1, ' ');
 	}
-	out[idx] = 0; return (out);
+	out[idx] = 0;
+	return (out);
 }
 
-//void	ft_run_piped(int infd, int outfd, char **cmd)
-//{
-//	int		pid;
-//	char	*full_cmd;
-//
-//	pid = fork();
-//	if (pid == -1)
-//	{
-//		//free cmd
-//		exit (0);
-//	}
-//	if (pid == 0)
-//	{
-//		full_cmd = ft_check_cmd(ft_strjoin("/", cmd[0]));
-//		execve(full_cmd, cmd,
-//				                    char *const _Nullable envp[]);
-//	}
-//	else
-//	{
-//	}
-//	dup2(1, infd);
-//}
+void	ft_run_piped(int infd, int outfd, char **cmd, char *env[])
+{
+	int	pid;
+
+	pid = fork();
+	if (pid == -1)
+	{
+		exit(0);
+		//free cmd;
+	}
+	if (pid == 0)
+	{
+		dup2(infd, 0);
+		dup2(outfd, 1);
+		execve(cmd[0], cmd, env);
+		exit(1);
+	}
+	else
+	{
+		close(infd);
+		close(outfd);
+		waitpid(pid, NULL, 0);
+	}
+}
 
 int	main(int ac, char *av[], char *envp[])
 {
+	char	*infile;
+	char	*cmd_0;
+	char	*cmd_1;
+	int		infd;
+	int		outfd;
+	int		pipefd[2];
+
 	ft_assert(ac-- == 5, "Usage: ./pipex infile <cmd1> <cmd2> outfile");
 	ft_assert(access(av[1], F_OK | R_OK) == 0, strerror(errno));
-	char	*cmd_0 = av[2];
-	char	*cmd_1 = av[3];
+	infile = av[1];
+	cmd_0 = av[2];
+	cmd_1 = av[3];
+	infd = open(infile, O_RDONLY);
+	outfd = open(infile, O_RDWR | O_CREAT | O_TRUNC, 0644);
+	printf("%d\n", outfd);
+	pipe(pipefd);
 	const char	*path = ft_get_path(envp);
-	char	**c1 = ft_parse_cmd(cmd_0, path);
-	//char	**c2 = ft_parse_cmd(cmd_1);
-	int idx = 0;
-	while (c1[idx])
-	{
-		printf("%s\n", c1[idx]);
-		free(c1[idx++]);
-	}
+	char	**c0 = ft_parse_cmd(cmd_0, path);
+	char	**c1 = ft_parse_cmd(cmd_1, path);
+	ft_run_piped(infd, pipefd[1], c0, envp);
+	ft_run_piped(pipefd[0], outfd, c1, envp);
 	free(c1);
 }
