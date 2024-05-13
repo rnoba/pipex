@@ -26,10 +26,7 @@ void	ft_free_matrix(char **m)
 
 	idx = 0;
 	while (m[idx])
-	{
-		free(m[idx]);
-		idx++;
-	}
+		free(m[idx++]);
 	free(m);
 }
 

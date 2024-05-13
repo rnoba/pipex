@@ -12,122 +12,112 @@ size_t	ft_strlendel(char *str, char del)
 	return (size);
 }
 
-size_t	ft_count_cmd(char *c)
+typedef struct s_command {
+	char		**cmd_args;
+	const char	*env[];
+}	t_command;
+
+
+t_command	ft_parse_cmd(char *c, const char *path)
 {
-	size_t	count;
-	size_t	len;
+	t_command	cmd = {0};
+	int			idx;
+	int			c_idx;
+	int			len;
+	int			*consume;
+	char		**tmp;
+	char		**test;
+	(void)path;
 
-	count = 0;
-	while (c)
+	tmp = ft_split(c, ' ');
+	idx = 1;
+	len = 0;
+	consume = malloc(sizeof(int) * ft_arblen((void*)tmp));
+	test = malloc(sizeof(char **) * ft_arblen((void*)tmp));
+	(void)len;
+	ft_bzero(consume, ft_arblen((void*)tmp) * sizeof(int));
+	while (tmp[idx])
 	{
-		if (ft_isspace(*c))
-			c++;
-		len = ft_strlendel(c, ' ');
-		if (c[0] == '\'')
-			len = ft_strlendel(c + 1, '\'') + 2;
-		if (len == 0)
-			break ;
-		count++;
-		if (c[0] == '\'' && ft_strchr(c + 1, '\''))
-			c = ft_strchr(c + 1, '\'') + 1;
-		else
-			c = ft_strchr(c + 1, ' ');
-	}
-	return (count);
-}
-
-char	**ft_parse_cmd(char *cmd, const char *path)
-{
-	char	*c;
-	int		idx;
-	size_t	len;
-	char	**out;
-	char	*full_cmd;
-
-	c = cmd;
-	idx = 0;
-	out	= malloc(sizeof(char *) * (ft_count_cmd(cmd) + 1));
-	while (c)
-	{
-		if (ft_isspace(*c))
-			c++;
-		len = ft_strlendel(c, ' ');
-		if (c[0] == '\'')
-			len = ft_strlendel(c + 1, '\'') + 2;
-		if (len == 0)
-			break ;
-		out[idx] = malloc(sizeof(char) * len + 1);
-		ft_bzero(out[idx], len + 1);
-		ft_memcpy(out[idx], c, len);
-		if (idx == 0)
+		char *curr = tmp[idx - 1];
+		char *next = tmp[idx];
+		if (curr[0] == '\'' && next[ft_strlen(next)-1] == '\'')
 		{
-			full_cmd = ft_check_cmd(ft_strjoin("/", out[idx]), path);
-			if (!full_cmd)
-			{
-				free(out[idx]);
-				free(out);
-				exit (0);
-			}
-			free(out[idx]);
-			out[idx] = full_cmd;
+			consume[idx-1] = 1; 
+			consume[idx] = 1; 
+			len++;
+			char *spc = ft_strjoin(" ", next);
+			free(next);
+			char *ac = ft_strjoin(curr, spc); 
+			free(curr);
+			free(spc);
+			test[idx-len] = ac;
 		}
 		idx++;
-		if (c[0] == '\'' && ft_strchr(c + 1, '\''))
-			c = ft_strchr(c + 1, '\'') + 1;
-		else
-			c = ft_strchr(c + 1, ' ');
 	}
-	out[idx] = 0;
-	return (out);
+	c_idx = 0;
+	int	fix = 0;
+	int	real_idx;
+	while (tmp[c_idx])
+	{
+		char *curr = tmp[c_idx];
+		if (!consume[c_idx])
+		{
+			real_idx = c_idx - (fix / 2);
+			if (real_idx == 0)
+			{
+				char *cmd = ft_check_cmd(ft_strjoin("/", curr), path);
+				free(curr);
+				test[real_idx] = cmd;
+			}
+			else
+				test[real_idx] = curr;
+			len++;
+		}
+		else
+			fix++;
+		c_idx++;
+	}
+	free(tmp);
+	for(int i = 0; i < len; i ++)
+	{
+		printf("%s\n", test[i]);
+	}
+	return (cmd);
 }
 
-void	ft_run_piped(int infd, int outfd, char **cmd, char *env[])
+void	ft_run_piped(int fd[2], char **cmd, char *env[])
 {
 	int	pid;
 
 	pid = fork();
 	if (pid == -1)
 	{
-		exit(0);
-		//free cmd;
+		ft_free_matrix(cmd);
+		exit(1);
 	}
 	if (pid == 0)
 	{
-		dup2(infd, 0);
-		dup2(outfd, 1);
+		dup2(fd[0], 0);
+		dup2(fd[1], 1);
 		execve(cmd[0], cmd, env);
+		ft_free_matrix(cmd);
 		exit(1);
 	}
-	else
-	{
-		close(infd);
-		close(outfd);
-		waitpid(pid, NULL, 0);
-	}
+	printf("%d\n", pid);
+	close(fd[0]);
+	close(fd[1]);
+	waitpid(pid, NULL, 0);
 }
 
 int	main(int ac, char *av[], char *envp[])
 {
 	char	*infile;
-	char	*cmd_0;
-	char	*cmd_1;
-	int		infd;
-	int		outfd;
-	int		pipefd[2];
-
+	char	*outfile;
 	ft_assert(ac-- == 5, "Usage: ./pipex infile <cmd1> <cmd2> outfile");
 	ft_assert(access(av[1], F_OK | R_OK) == 0, strerror(errno));
 	infile = av[1];
-	cmd_0 = av[2];
-	cmd_1 = av[3];
-	infd = open(infile, O_RDONLY);
-	outfd = open(infile, O_RDWR | O_CREAT | O_TRUNC, 0644);
-	printf("%d\n", outfd);
-	pipe(pipefd);
-	const char	*path = ft_get_path(envp);
-	char	**c0 = ft_parse_cmd(cmd_0, path);
-	char	**c1 = ft_parse_cmd(cmd_1, path);
-	ft_run_piped(infd, pipefd[1], c0, envp);
-	ft_run_piped(pipefd[0], outfd, c1, envp);
-	free(c1);
+	infile = av[ac];
+	(void)infile;
+	(void)outfile;
+	ft_parse_cmd(av[2], ft_get_path(envp));
 }

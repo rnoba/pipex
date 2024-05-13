@@ -22,7 +22,7 @@ PT1 = ft_isalpha.c ft_isdigit.c ft_isalnum.c ft_isascii.c \
 	ft_strnstr.c ft_atoi.c ft_calloc.c ft_strdup.c
 PT2 = ft_putnbr_fd.c ft_putstr_fd.c ft_putchar_fd.c ft_striteri.c ft_strmapi.c \
 	 ft_putendl_fd.c ft_itoa.c ft_split.c ft_strtrim.c ft_strjoin.c ft_substr.c
-EXTRA = ft_strfchr.c ft_isspace.c ft_min.c ft_max.c ft_clamp.c
+EXTRA = ft_arblen.c ft_strlchr.c ft_strfchr.c ft_isspace.c ft_min.c ft_max.c ft_clamp.c
 GNL = get_next_line.c get_next_line_utils.c
 BONUS = ft_lstdelone.c ft_lstadd_back.c ft_lstlast.c ft_lstsize.c ft_lstadd_front.c \
 	 ft_lstnew.c ft_lstclear.c ft_lstiter.c ft_lstmap.c

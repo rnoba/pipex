@@ -16,6 +16,7 @@
 # include <stddef.h>
 # include <malloc.h>
 # include <unistd.h>
+# include <limits.h>
 
 typedef struct s_list
 {
@@ -72,6 +73,7 @@ char	*ft_strjoin(char const *s1, char const *s2);
 char	*ft_itoa(int n);
 char	*ft_strmapi(char const *s, char (*f)(unsigned int, char));
 char	*get_next_line(int fd);
+char	*ft_strlchr(const char *s, int c, int l);
 char	*ft_strfchr(const char *s, int (*f)(int));
 
 t_list	*ft_lstnew(void *content);
@@ -81,4 +83,5 @@ t_list	*ft_lstmap(t_list *lst, void *(*f)(void *), void (*del)(void *));
 size_t	ft_strlen(const char *str);
 size_t	ft_strlcpy(char *dest, const char *src, size_t size);
 size_t	ft_strlcat(char *dest, const char *src, size_t size);
+size_t	ft_arblen(void *i);
 #endif
