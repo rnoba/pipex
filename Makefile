@@ -1,8 +1,8 @@
 NAME=pipex
-SRC=utils.c pipex.c
+SRC=utils.c pipex_bonus.c
 CC=clang
 LIBFT=./libft/libft.a
-CFLAGS=-Wall -Wextra -Werror -O3 -g3
+CFLAGS=-O3 -g3
 
 all: $(NAME)
 

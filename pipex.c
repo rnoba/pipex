@@ -1,88 +1,63 @@
 #include <pipex.h>
 
-size_t	ft_strlendel(char *str, char del)
-{
-	size_t	size;
-
-	size = 0;
-	while (str[size] && str[size] != del)
-	{
-		size++;
-	}
-	return (size);
-}
-
 typedef struct s_command {
 	char		**cmd_args;
 	const char	*env[];
 }	t_command;
 
-
-t_command	ft_parse_cmd(char *c, const char *path)
+/* 
+ * 	This funtion is not safe, 
+	only works in simple strings 
+*/
+char	**ft_strsparse(char *str, char delimit, char open, char close)
 {
-	t_command	cmd = {0};
-	int			idx;
-	int			c_idx;
-	int			len;
-	int			*consume;
-	char		**tmp;
-	char		**test;
-	(void)path;
+	char	*tok = str;
+	char	*ref = str;
+	char	**block = malloc(sizeof(char *));
 
-	tmp = ft_split(c, ' ');
-	idx = 1;
-	len = 0;
-	consume = malloc(sizeof(int) * ft_arblen((void*)tmp));
-	test = malloc(sizeof(char **) * ft_arblen((void*)tmp));
-	(void)len;
-	ft_bzero(consume, ft_arblen((void*)tmp) * sizeof(int));
-	while (tmp[idx])
+	int	insideBlock = 0;
+	int	idx = 0;
+	while (*tok)
 	{
-		char *curr = tmp[idx - 1];
-		char *next = tmp[idx];
-		if (curr[0] == '\'' && next[ft_strlen(next)-1] == '\'')
+		if (insideBlock)
 		{
-			consume[idx-1] = 1; 
-			consume[idx] = 1; 
-			len++;
-			char *spc = ft_strjoin(" ", next);
-			free(next);
-			char *ac = ft_strjoin(curr, spc); 
-			free(curr);
-			free(spc);
-			test[idx-len] = ac;
+			if (*tok++ == close)
+				insideBlock = 0;
+			continue ;
 		}
-		idx++;
-	}
-	c_idx = 0;
-	int	fix = 0;
-	int	real_idx;
-	while (tmp[c_idx])
-	{
-		char *curr = tmp[c_idx];
-		if (!consume[c_idx])
+		if (*tok == open)
 		{
-			real_idx = c_idx - (fix / 2);
-			if (real_idx == 0)
-			{
-				char *cmd = ft_check_cmd(ft_strjoin("/", curr), path);
-				free(curr);
-				test[real_idx] = cmd;
-			}
-			else
-				test[real_idx] = curr;
-			len++;
+			insideBlock = 1;
+			tok++;
+			continue ;
 		}
-		else
-			fix++;
-		c_idx++;
+		if (*tok == delimit)
+		{
+			*tok++ = '\0';
+			block = ft_realloc(block, sizeof(char *) * idx, sizeof(char *) * (idx + 1));
+			block[idx++] = ft_strdup(ref);
+			ref = tok;
+			continue ;
+		}
+		tok++;
 	}
-	free(tmp);
-	for(int i = 0; i < len; i ++)
+	block = ft_realloc(block, sizeof(char *) * idx, sizeof(char *) * (idx + 2));
+	block[idx] = ft_strdup(ref);
+	block[idx + 1] = NULL;
+	free(str);
+	return (block);
+}
+
+char	**ft_parse_cmd(char *cmd, const char *path)
+{
+	char **parsed = ft_strsparse(cmd, ' ', '\'', '\'');
+	char *c = ft_check_cmd(ft_strjoin("/", parsed[0]), path);
+	if (c)
 	{
-		printf("%s\n", test[i]);
+		free(parsed[0]);
+		parsed[0] = c;
 	}
-	return (cmd);
+	return (parsed);
 }
 
 void	ft_run_piped(int fd[2], char **cmd, char *env[])
@@ -103,21 +78,34 @@ void	ft_run_piped(int fd[2], char **cmd, char *env[])
 		ft_free_matrix(cmd);
 		exit(1);
 	}
-	printf("%d\n", pid);
 	close(fd[0]);
 	close(fd[1]);
 	waitpid(pid, NULL, 0);
+	ft_free_matrix(cmd);
 }
 
 int	main(int ac, char *av[], char *envp[])
 {
 	char	*infile;
 	char	*outfile;
+	int		piped[2];
+	int		input[2];
+
 	ft_assert(ac-- == 5, "Usage: ./pipex infile <cmd1> <cmd2> outfile");
 	ft_assert(access(av[1], F_OK | R_OK) == 0, strerror(errno));
 	infile = av[1];
-	infile = av[ac];
-	(void)infile;
-	(void)outfile;
-	ft_parse_cmd(av[2], ft_get_path(envp));
+	outfile = av[ac];
+	pipe(piped);
+	int	infd = open(infile, O_RDONLY);
+	int	outfd = open(outfile, O_RDWR | O_TRUNC | O_CREAT, 0644);
+
+	input[0] = infd;
+	input[1] = piped[1];
+	char **cmd_0 = ft_parse_cmd(ft_strdup(av[2]), ft_get_path(envp));
+	ft_run_piped(input, cmd_0, envp); 
+
+	input[0] = piped[0];
+	input[1] = outfd;
+	char **cmd_1 = ft_parse_cmd(ft_strdup(av[3]), ft_get_path(envp));
+	ft_run_piped(input, cmd_1, envp); 
 }
