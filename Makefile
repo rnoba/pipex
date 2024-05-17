@@ -1,8 +1,8 @@
 NAME=pipex
-SRC=utils.c pipex_bonus.c
+SRC=utils.c pipex.c
 CC=clang
 LIBFT=./libft/libft.a
-CFLAGS=-O3 -g3
+CFLAGS=-Wall -Wextra -Werror -O3
 
 all: $(NAME)
 
@@ -11,6 +11,8 @@ $(NAME): $(LIBFT)
 
 $(LIBFT):
 	make -C ./libft
+
+bonus: all 
 
 clean:
 	make -C ./libft clean

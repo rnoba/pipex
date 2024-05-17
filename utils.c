@@ -1,3 +1,14 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   utils.c                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: rnogueir <rnogueir@student.42sp.org.b      +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/05/17 17:00:41 by rnogueir          #+#    #+#             */
+/*   Updated: 2024/05/17 17:47:09 by rnogueir         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 #include <pipex.h>
 
 const char	*ft_get_path(char *env[])
@@ -44,4 +55,48 @@ char	*ft_check_cmd(char *cmd, const char *path)
 	free(cmd);
 	ft_free_matrix(ref);
 	return (NULL);
+}
+
+char	**ft_parse_cmd(char *cmd, const char *path)
+{
+	char	**parsed;
+	char	*command;
+
+	parsed = ft_strsparse(cmd, ' ', '\'', '\'');
+	if (parsed[0][0] == '/' || (parsed[0][0] == '.' && parsed[0][1] == '/'))
+	{
+		if (access(parsed[0], F_OK | X_OK) == 0)
+			return (parsed);
+	}
+	command = ft_check_cmd(ft_strjoin("/", parsed[0]), path);
+	if (command)
+	{
+		free(parsed[0]);
+		parsed[0] = command;
+		return (parsed);
+	}
+	ft_free_matrix(parsed);
+	ft_assert(0, strerror(errno));
+	return (NULL);
+}
+
+int	ft_run_piped(int fd[2], char **cmd, char *env[])
+{
+	int	pid;
+	int	status;
+
+	pid = fork();
+	if (pid == -1)
+		return (0);
+	if (pid == 0)
+	{
+		dup2(fd[0], 0);
+		dup2(fd[1], 1);
+		execve(cmd[0], cmd, env);
+		return (0);
+	}
+	close(fd[0]);
+	close(fd[1]);
+	waitpid(pid, &status, 0);
+	return (status);
 }
