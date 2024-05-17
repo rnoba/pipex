@@ -11,7 +11,7 @@ char	**ft_parse_cmd(char *cmd, const char *path)
 	char	*command;
 
 	parsed = ft_strsparse(cmd, ' ', '\'', '\'');
-	if (parsed[0][0] == '/' || (parsed[0][0] == '.' && parsed[1][0] == '/'))
+	if (parsed[0][0] == '/' || (parsed[0][0] == '.' && parsed[0][1] == '/'))
 	{
 		if (access(parsed[0], F_OK | X_OK) == 0)
 			return (parsed);
@@ -61,7 +61,7 @@ void	ft_handle_heredoc(char *limiter)
 	char	*line;
 	int		fd;
 
-	fd = open(HEREDOC_PATH, O_RDWR | O_APPEND | O_CREAT, 0644);
+	fd = open(HEREDOC_PATH, O_RDWR | O_TRUNC | O_CREAT, 0644);
 	ft_assert(fd != -1, "Error opening here_doc");
 	while ((line = get_next_line(0)))
 	{
@@ -113,11 +113,11 @@ int	main(int ac, char *av[], char *envp[])
 	ft_run_side_cmd(av[idx++], envp, infd, piped[1]);
 	while (idx < ac - 1)
 	{
-		//close(in_piped[0]);
 		pipe(in_piped);
 		ft_run_side_cmd(av[idx++], envp, piped[0], in_piped[1]);
 		dup2(in_piped[0], piped[0]);
 	}
+	//TODO: append >> when here_doc
 	ft_run_side_cmd(av[ac - 1], envp, piped[0], 
 		open(av[ac], O_RDWR | O_TRUNC | O_CREAT, 0644));
 	unlink(HEREDOC_PATH);
